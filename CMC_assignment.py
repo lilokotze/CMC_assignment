@@ -4,7 +4,7 @@
 import requests, json
 
 
-#Define variables
+#Define variables used to query API
 url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
 
 headers = {
@@ -15,9 +15,18 @@ headers = {
 
 qs = {'start':'1','limit':'10','convert':'USD'}
 
+
+#Definte preogram variables
 counter = 0
 
-table_header = [['#', 'Name', 'Market Cap ($)', 'Price ($)', 'Volume-24h ($)', 'Circulating Supply', 'Change-24h']]
+topNum = range(0,10)
+
+table_title = " TOP 10 PERFORMING CRYPTOCURRENCIES  -Ranked: Market capitalization-"
+table_header = ['#', 'Name', 'Market Cap ($)', 'Price ($)', 'Volume-24h ($)', 'Change-24h (%)', 'Circulating Supply']
+
+data_keys = ['cmc_rank', 'name', 'quote', 'circulating_supply']
+quote_keys = ['market_cap', 'price', 'volume_24h','percent_change_24h']
+
 
 
 #Request data from CoinMarketCap API using GET function
@@ -27,34 +36,42 @@ cmc_data = requests.get(url, headers=headers, params=qs)
 if cmc_data.status_code == 200: #Check if status is ok
 
     response = cmc_data.json() #use built-in json decoder to get json response content
-    
-    print('\n\n          TOP 10 PERFORMING CRYPTOCURRENCIES      -Ranked: Market capitalization- \n')
 
-    print('='*110)
-    print("{:^10s}".format(table_header[0][0]),end='')
-    print("{:<10s}".format(table_header[0][1]),end='')
-    print("{:>20s}".format(table_header[0][2]),end='')
-    print("{:>12s}".format(table_header[0][3]),end='')
-    print("{:^20s}".format(table_header[0][4]),end='')
-    print("{:^25s}".format(table_header[0][5]),end='')
-    print("{:^10s}".format(table_header[0][6]),end='')
-    print('\n')
-    print('='*110)
-    
+    data = response['data'] 
 
-    for counter in range(0, 10):
+    if all(k in data[0] for k in data_keys): #Check if all 2nd level keys exist
+        if all(k in data[0]['quote']['USD'] for k in quote_keys): #Check if all 3rd level keys exist
 
-        symbol = response['data'][counter]['symbol']        
+            print('All requested keys exist\n\n')
+            
+            print("{:^150}".format(table_title))
+            print('='*150)
 
-        print("{:^10}".format(response['data'][counter]['cmc_rank']), end='')
-        print("{:<15}".format(response['data'][counter]['name']), end='')
-        print("{:>16.2f}".format(response['data'][counter]['quote']['USD']['market_cap']), end='')
-        print("{:>10.2f}".format(response['data'][counter]['quote']['USD']['price']), end='')
-        print("{:>18.2f}".format(response['data'][counter]['quote']['USD']['volume_24h']), end='')
-        print("{:>20.2f}".format(response['data'][counter]['circulating_supply']),symbol, end='')
-        print("{:>10.2f}".format(response['data'][counter]['quote']['USD']['percent_change_24h']),'%', end='')
-        print('\n')
+            for i in table_header:
+                print("{:<20s}".format(i),end='')
 
-    
+            print('\n')
+            print('='*150)
+
+            #Print # cryptocurrencies defined in topNum
+            for x in topNum:
+                for y in data_keys:
+                    
+                    if y == 'quote':
+                        for z in quote_keys:
+                            print("{:<20.2f}".format(data[x][y]['USD'][z]), end='')
+                    elif y == 'circulating_supply':
+                        symbol = data[x]['symbol']
+                        print("{:>.2f}".format(data[x][y]), symbol, end='')
+                    else:
+                        print("{:<20}".format(data[x][y]), end='')
+
+                print('\n')
+        else:
+            print('ERROR - check "qoute" keys')
+    else:
+        print('ERROR - check "data" keys')
+
+       
 else :
  print('ERROR: Check status code: ',cmc_data.status_code)
